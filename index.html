@@ -27,6 +27,51 @@
     color: #00ffffaa;
   }
 
+  /* ปรับขนาดฟอนต์ และ layout สำหรับมือถือ */
+@media (max-width: 600px) {
+  body {
+    font-size: 14px;
+  }
+
+  .sidebar {
+    width: 100%;
+    position: relative;
+    height: auto;
+  }
+
+  .chat-container {
+    flex-direction: column;
+  }
+
+  .chat-messages {
+    height: 60vh;
+  }
+
+  .question-buttons {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+/* สำหรับแท็บเล็ต */
+@media (min-width: 601px) and (max-width: 1024px) {
+  .sidebar {
+    width: 200px;
+  }
+
+  .chat-messages {
+    height: 70vh;
+  }
+}
+
+/* สำหรับจอใหญ่ (คอม) */
+@media (min-width: 1025px) {
+  .sidebar {
+    width: 250px;
+  }
+}
+
+
   /* สำหรับกล่องคำถามสำเร็จของ BAI ให้มี max-height และ scroll ถ้าเกิน */
 #phrases.bai-scroll {
   max-height: 240px; /* กำหนดความสูงสูงสุด */
