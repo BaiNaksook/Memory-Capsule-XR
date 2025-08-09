@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Memory Capsule XR - นักวิทยาศาสตร์ในตำนาน</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap');
+  /* --- Loading Screen --- */
+  #loadingScreen {
+    position: fixed;
+    top:0; left:0; right:0; bottom:0;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: #00ffff;
+    font-family: 'Roboto Mono', monospace, monospace;
+    font-size: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    user-select: none;
+  }
+  #loadingCredit {
+    margin-top: 20px;
+    font-size: 1.2rem;
+    color: #00ffffaa;
+  }
+
+  /* สำหรับกล่องคำถามสำเร็จของ BAI ให้มี max-height และ scroll ถ้าเกิน */
+#phrases.bai-scroll {
+  max-height: 240px; /* กำหนดความสูงสูงสุด */
+  overflow-y: auto;
+  padding-right: 10px; /* เว้นที่สำหรับ scrollbar */
+  border: 1px solid #00ffff88;
+  border-radius: 15px;
+  box-shadow: 0 0 10px #00ffffaa inset;
+  background: #002233cc;
+}
+
+
+  body {
+    margin: 0; padding: 0;
+    font-family: 'Roboto Mono', monospace, sans-serif;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: #eee;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 40px 40px 80px 40px; /* เพิ่ม padding ด้านล่าง เพื่อเว้นพื้นที่ข้อความล่าง */
+  }
+  h1 {
+    font-weight: 700;
+    font-size: 3.5rem;
+    margin-bottom: 25px;
+    color: #00ffff;
+    text-shadow: 0 0 10px #00ffffcc;
+  }
+  .container {
+    background: #152a3acc;
+    width: 95vw;
+    height: 85vh;
+    max-width: 1300px;
+    border-radius: 15px;
+    box-shadow: 0 0 40px #00ffffcc;
+    display: flex;
+    overflow: hidden;
+  }
+  .sidebar {
+    width: 300px;
+    background: #203a43dd;
+    border-right: 2px solid #00ffff99;
+    padding: 25px 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar h2 {
+    font-weight: 600;
+    font-size: 1.5rem;
+    margin: 0 0 20px;
+    color: #00ffffdd;
+    text-align: center;
+    letter-spacing: 1.2px;
+  }
+  .ai-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex-grow: 1;
+    overflow-y: auto;
+  }
+  .ai-list li {
+    display: flex;
+    align-items: center;
+    padding: 14px 12px;
+    margin-bottom: 14px;
+    cursor: pointer;
+    border-radius: 12px;
+    background: #0f2027;
+    transition: background-color 0.3s;
+    box-shadow: inset 0 0 8px #007bff44;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #a0ffffdd;
+  }
+  .ai-list li:hover, .ai-list li.selected {
+    background: #00ffff44;
+    box-shadow: 0 0 18px #00ffffcc;
+    color: #002233;
+  }
+  .ai-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    margin-right: 14px;
+    object-fit: cover;
+    filter: drop-shadow(0 0 3px #00ffffaa);
+    background: #003344;
+  }
+  .chat-area {
+    flex-grow: 1;
+    padding: 25px 30px 20px 30px;
+    display: flex;
+    flex-direction: column;
+    background: #0f2027;
+    border-radius: 0 15px 15px 0;
+    box-shadow: inset 0 0 30px #004466cc;
+    position: relative;
+  }
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 15px;
+    margin-bottom: 18px;
+  }
+  .message {
+    display: flex;
+    margin-bottom: 16px;
+  }
+  .message.ai {
+    flex-direction: row;
+  }
+  .message.user {
+    flex-direction: row-reverse;
+  }
+  .bubble {
+    max-width: 65%;
+    padding: 16px 24px;
+    border-radius: 25px;
+    background: #222;
+    color: #0ff;
+    font-size: 1.15rem;
+    word-wrap: break-word;
+    box-shadow: 0 0 12px #00ffffbb;
+    line-height: 1.4;
+  }
+  .message.ai .bubble {
+    background: linear-gradient(90deg, #004466, #0088cc);
+    color: #b0f0ff;
+    box-shadow: 0 0 18px #00ffffee;
+  }
+  .avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    margin: 0 14px;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 5px #00ffffcc);
+    background: #003344;
+    object-fit: cover;
+  }
+  .phrases {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .phrases button {
+    background: linear-gradient(45deg, #00ffffaa, #0099ccaa);
+    border: none;
+    padding: 10px 22px;
+    border-radius: 30px;
+    font-weight: 700;
+    color: #002233;
+    cursor: pointer;
+    box-shadow: 0 0 14px #00ffffbb;
+    transition: all 0.3s ease;
+    user-select: none;
+    font-size: 1.1rem;
+  }
+  .phrases button:hover {
+    background: linear-gradient(45deg, #00ffffff, #00bbffcc);
+    box-shadow: 0 0 20px #00ffffee;
+    color: #000;
+  }
+  .input-box {
+    display: flex;
+    gap: 18px;
+    padding-top: 8px;
+    border-top: 2px solid #00ffff77;
+  }
+  .input-box input {
+    flex-grow: 1;
+    padding: 14px 22px;
+    font-size: 1.15rem;
+    border-radius: 35px;
+    border: none;
+    background: #203a43cc;
+    color: #cceeff;
+    outline: none;
+    box-shadow: 0 0 12px #00ffffbb inset;
+    transition: background 0.3s;
+  }
+  .input-box input::placeholder {
+    color: #99ffff88;
+  }
+  .input-box input:focus {
+    background: #336f8ecc;
+    box-shadow: 0 0 20px #00ffffcc inset;
+  }
+  .input-box button {
+    background: #00ffffcc;
+    border: none;
+    border-radius: 35px;
+    padding: 0 28px;
+    font-weight: 700;
+    color: #002233;
+    cursor: pointer;
+    box-shadow: 0 0 20px #00ffffcc;
+    transition: background 0.3s, color 0.3s;
+    font-size: 1.25rem;
+  }
+  .input-box button:hover {
+    background: #00ffffee;
+    color: #000;
+  }
+  /* Scrollbar */
+  .ai-list::-webkit-scrollbar,
+  .messages::-webkit-scrollbar {
+    width: 8px;
+  }
+  .ai-list::-webkit-scrollbar-thumb,
+  .messages::-webkit-scrollbar-thumb {
+    background: #00ffffaa;
+    border-radius: 4px;
+  }
+
+  /* Notification */
+  #notification {
+    position: fixed;
+    top: 30px;
+    right: 30px;
+    background: #00ffffcc;
+    color: #003344;
+    padding: 16px 28px;
+    border-radius: 30px;
+    font-weight: 700;
+    box-shadow: 0 0 25px #00ffffcc;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+    z-index: 9999;
+    user-select: none;
+    font-family: 'Roboto Mono', monospace, monospace;
+    font-size: 1.15rem;
+  }
+  #notification.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Bottom Demo & Contact Info */
+  #bottomInfo {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #152a3acc;
+    color: #00ffffcc;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 1rem;
+    padding: 10px 20px;
+    text-align: center;
+    border-top: 2px solid #00ffff99;
+    box-shadow: 0 0 15px #00ffffcc inset;
+    user-select: none;
+  }
+  #bottomInfo a {
+    color: #00ffffaa;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  #bottomInfo a:hover {
+    color: #00ffffee;
+  }
+</style>
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div id="loadingScreen">
+  <div>Loading...</div>
+  <div id="loadingCredit">Made By BAI</div>
+</div>
+
+<h1>Memory Capsule XR Demo</h1>
+<div class="container">
+  <div class="sidebar">
+    <h2>นักวิทยาศาสตร์ในตำนาน</h2>
+    <ul class="ai-list" id="aiList"></ul>
+  </div>
+  <div class="chat-area">
+    <div class="messages" id="messages"></div>
+    <div class="phrases" id="phrases"></div>
+    <div class="input-box">
+      <input type="text" id="userInput" placeholder="พิมพ์ข้อความของคุณที่นี่...">
+      <button id="sendBtn" title="ส่งข้อความ">ส่ง</button>
+    </div>
+  </div>
+</div>
+
+<!-- ข้อความด้านล่าง -->
+<div id="bottomInfo">
+  นี้เป็นเว็บแบบ Demo ทดลองสำหรับส่งงานครู
+  <br />
+  หากต้องการสนับสนุนหรือสอบถาม ติดต่อได้ที่ 
+  <a href="https://web.facebook.com/ubaidilla.naksuk" target="_blank" rel="noopener noreferrer">https://web.facebook.com/ubaidilla.naksuk</a>
+</div>
+
+<div id="notification"></div>
+
+<script>
+  // รายชื่อ AI นักวิทยาศาสตร์ในตำนาน + Easter Egg BAI นักวิทย์
+  // ใส่ลิงก์รูปโปรไฟล์ใน properties profilePic
+  const aiProfiles = [
+  {
+    id: 1,
+    name: 'อัลเบิร์ต ไอน์สไตน์',
+    profilePic: 'https://upload.wikimedia.org/wikipedia/commons/d/d3/Albert_Einstein_Head.jpg',
+    replies: {
+      'สวัสดีครับ': 'สวัสดีครับ! ผมอัลเบิร์ต ไอน์สไตน์ นักฟิสิกส์ทฤษฎีผู้คิดค้นทฤษฎีสัมพัทธภาพครับ',
+      'อธิบายทฤษฎีสัมพัทธภาพ': 'ทฤษฎีสัมพัทธภาพแบ่งเป็นสัมพัทธภาพพิเศษและทั่วไป โดยมีหลักการว่ากฎฟิสิกส์เหมือนกันในทุกกรอบอ้างอิงเฉื่อยและความเร็วของแสงคงที่ครับ',
+      'สูตร E=mc^2 คืออะไร': 'สูตรนี้แสดงว่าพลังงาน (E) เท่ากับมวล (m) คูณด้วยความเร็วแสงยกกำลังสอง (c²) ซึ่งหมายถึงมวลและพลังงานสามารถเปลี่ยนรูปกันได้ครับ',
+      'แรงโน้มถ่วงคืออะไร?': 'แรงโน้มถ่วงในทฤษฎีของผมเป็นผลจากการบิดงอของกาล-อวกาศ ซึ่งทำให้วัตถุเคลื่อนที่ตามเส้นทางที่โค้งงอครับ',
+      'เล่าประวัติ': 'อัลเบิร์ต ไอน์สไตน์ เกิดปี 1879 ในเยอรมนี เป็นนักฟิสิกส์ผู้มีชื่อเสียงระดับโลกจากทฤษฎีสัมพัทธภาพและสมการ E=mc^2 ครับ',
+      'default': 'ถามผมเรื่องฟิสิกส์หรือทฤษฎีสัมพัทธภาพได้เลยครับ!'
+    },
+    phrases: [
+      'สวัสดีครับ',
+      'อธิบายทฤษฎีสัมพัทธภาพ',
+      'สูตร E=mc^2 คืออะไร',
+      'แรงโน้มถ่วงคืออะไร?',
+      'เล่าประวัติ'
+    ]
+  },
+  {
+    id: 2,
+    name: 'ไอแซก นิวตัน',
+    profilePic: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Portrait_of_Sir_Isaac_Newton%2C_1689.jpg/960px-Portrait_of_Sir_Isaac_Newton%2C_1689.jpg',
+    replies: {
+      'สวัสดีครับ': 'สวัสดีครับ! ผมไอแซก นิวตัน นักคณิตศาสตร์และฟิสิกส์ผู้ค้นพบกฎแรงโน้มถ่วงครับ',
+      'กฎแรงโน้มถ่วงคืออะไร': 'กฎของผมกล่าวว่า วัตถุสองชิ้นจะดึงดูดกันด้วยแรงที่แปรผันตรงกับมวลของวัตถุและแปรผกผันกับกำลังสองของระยะห่างครับ',
+      'แรงเฉื่อยคืออะไร': 'แรงเฉื่อยคือแนวโน้มของวัตถุที่จะรักษาสภาพการเคลื่อนที่เดิมไว้ครับ',
+      'เล่าประวัติ': 'ไอแซก นิวตัน เกิดปี 1643 ในอังกฤษ เป็นนักคณิตศาสตร์และฟิสิกส์ที่วางรากฐานวิทยาศาสตร์สมัยใหม่ด้วยกฎการเคลื่อนที่และแรงโน้มถ่วงครับ',
+      'default': 'ถามผมเกี่ยวกับแรงโน้มถ่วงหรือกฎของการเคลื่อนที่ได้เลยครับ!'
+    },
+    phrases: [
+      'สวัสดีครับ',
+      'กฎแรงโน้มถ่วงคืออะไร',
+      'แรงเฉื่อยคืออะไร',
+      'เล่าประวัติ'
+    ]
+  },
+  {
+    id: 3,
+    name: 'มารี คูรี',
+    profilePic: 'https://www.scimath.org/images/2019/Article/11461/11461-1.jpg',
+    replies: {
+      'สวัสดีค่ะ': 'สวัสดีค่ะ! ฉันมารี คูรี นักวิทยาศาสตร์ผู้บุกเบิกงานด้านรังสีวิทยาค่ะ',
+      'รังสีคืออะไร': 'รังสีคือพลังงานที่แพร่กระจายในรูปของคลื่นหรืออนุภาคค่ะ',
+      'ฉันค้นพบอะไร': 'ฉันค้นพบธาตุเรเดียมและโพโลเนียม พร้อมกับงานวิจัยเกี่ยวกับกัมมันตภาพรังสีค่ะ',
+      'เล่าประวัติ': 'มารี คูรี เกิดปี 1867 ในโปแลนด์ เป็นนักฟิสิกส์-เคมีผู้ได้รับรางวัลโนเบลสองครั้ง จากงานวิจัยกัมมันตภาพรังสีค่ะ',
+      'default': 'ถามฉันเกี่ยวกับรังสีหรือประวัติของฉันได้เลยค่ะ!'
+    },
+    phrases: [
+      'สวัสดีค่ะ',
+      'รังสีคืออะไร',
+      'ฉันค้นพบอะไร',
+      'เล่าประวัติ'
+    ]
+  },
+  {
+    id: 4,
+    name: 'นิโคล่า เทสลา',
+    profilePic: 'https://upload.wikimedia.org/wikipedia/commons/d/d4/N.Tesla.JPG',
+    replies: {
+      'สวัสดีครับ': 'สวัสดีครับ! ผมนิโคล่า เทสลา นักประดิษฐ์และวิศวกรไฟฟ้าครับ',
+      'ไฟฟ้ากระแสสลับคืออะไร': 'ไฟฟ้ากระแสสลับคือกระแสไฟฟ้าที่เปลี่ยนทิศทางไปมาอย่างสม่ำเสมอครับ',
+      'ฉันคิดค้นอะไร': 'ผมคิดค้นระบบไฟฟ้ากระแสสลับและเทคโนโลยีวิทยุหลายอย่างครับ',
+      'เล่าประวัติ': 'นิโคล่า เทสลา เกิดปี 1856 ในโครเอเชีย เป็นนักประดิษฐ์ที่มีผลงานด้านไฟฟ้าและแม่เหล็กไฟฟ้าระดับโลกครับ',
+      'default': 'ถามผมเกี่ยวกับไฟฟ้าและประดิษฐกรรมได้เลยครับ!'
+    },
+    phrases: [
+      'สวัสดีครับ',
+      'ไฟฟ้ากระแสสลับคืออะไร',
+      'ฉันคิดค้นอะไร',
+      'เล่าประวัติ'
+    ]
+  },
+  {
+    id: 5,
+    name: 'ชาร์ลส์ ดาร์วิน',
+    profilePic: 'https://www.scimath.org/images/2019/Article/11329/11329.jpg',
+    replies: {
+      'สวัสดีครับ': 'สวัสดีครับ! ผมชาร์ลส์ ดาร์วิน นักธรรมชาติวิทยาผู้เสนอทฤษฎีวิวัฒนาการครับ',
+      'ทฤษฎีวิวัฒนาการคืออะไร': 'ทฤษฎีของผมกล่าวว่าสปีชีส์ต่างๆ มีการเปลี่ยนแปลงผ่านการคัดเลือกโดยธรรมชาติครับ',
+      'ผมเขียนหนังสืออะไร': 'ผมเขียน "กำเนิดของสปีชีส์" ซึ่งอธิบายทฤษฎีวิวัฒนาการครับ',
+      'เล่าประวัติ': 'ชาร์ลส์ ดาร์วิน เกิดปี 1809 ในอังกฤษ เป็นนักธรรมชาติวิทยาที่เสนอทฤษฎีวิวัฒนาการโดยการคัดเลือกตามธรรมชาติครับ',
+      'default': 'ถามผมเกี่ยวกับธรรมชาติและวิวัฒนาการได้เลยครับ!'
+    },
+    phrases: [
+      'สวัสดีครับ',
+      'ทฤษฎีวิวัฒนาการคืออะไร',
+      'ผมเขียนหนังสืออะไร',
+      'เล่าประวัติ'
+    ]
+  },
+  {
+    id: 6,
+    name: 'BAI นักวิทย์',
+    profilePic: 'Screenshot 2025-08-09 133002.png',
+    replies: {
+      'สวัสดีครับ': 'เฮ้! ผม BAI นักวิทย์ ผู้คิดค้นทุกอย่างในหัวผม... หรือยังคิดไม่ออกก็พิมพ์ว่า "default" ก็ได้ครับ 555',
+      'default': 'ผมยังไม่เก่งเท่าไอน์สไตน์หรือเทสลา แต่ผมเก่งเรื่องทำเว็บนี่แหละ! 😂',
+      'เล่าประวัติ': 'BAI นักวิทย์ คือ AI ที่ทำเว็บนี้ขึ้นมา แถมชอบมุกตลกและชอบคิดคำตอบแปลก ๆ สนุก ๆ ครับ 555',
+      /* (ตามคำถามอื่นๆ เช่น รักคืออะไร, อาหารโปรด ... ตามตัวอย่างก่อนหน้านี้) */
+      'รักคืออะไร': 'รักคือพลังงานลึกลับที่ทำให้คนเราอยากช่วยเหลือและเข้าใจกันครับ แม้จะไม่ใช่สูตรคำนวณก็รู้สึกได้!',
+      // ... (เพิ่มตามคำตอบที่ผมให้ก่อนหน้า)
+    },
+    phrases: [
+      'สวัสดีครับ',
+      'รักคืออะไร',
+      'ทำไมต้องเรียนหนังสือ',
+      'เคล็ดลับความเก่ง',
+      'อาหารโปรดของผม',
+      'เล่าเรื่องตลกให้ฟังหน่อย',
+      'ชอบทำอะไรเวลาว่าง',
+      'ทำไมต้องมี AI',
+      'ถ้าคุณเป็นซูเปอร์ฮีโร่',
+      'คำคมที่ชอบ',
+      'ทำยังไงให้ไม่เครียด',
+      'เพลงโปรด',
+      'ทำไมถึงชอบวิทยาศาสตร์',
+      'อยากบอกอะไรกับคนอ่าน',
+      'ทำไมต้องนอน',
+      'สิ่งที่ทำให้หัวเราะที่สุด',
+      'ชอบสัตว์อะไร',
+      'เรียนรู้สิ่งใหม่อย่างไร',
+      'อยากไปเที่ยวที่ไหน',
+      'ถ้าคุณเป็นพ่อครัว',
+      'คุณชอบกีฬาอะไร',
+      'ถ้าชีวิตเป็นเกม',
+      'คำแนะนำสำหรับเด็กๆ',
+      'ถ้าคุณมีพลังวิเศษ',
+      'คุณชอบหนังแนวไหน',
+      'วันหยุดทำอะไร',
+      'เทคโนโลยีที่ชอบ',
+      'เคยล้มเหลวไหม',
+      'เล่าประวัติ'
+    ]
+  }
+];
+
+
+  let selectedAI = null;
+
+  // สร้างรายการ AI
+  function renderAIList() {
+    const aiListEl = document.getElementById('aiList');
+    aiListEl.innerHTML = '';
+    aiProfiles.forEach(ai => {
+      const li = document.createElement('li');
+      li.dataset.id = ai.id;
+      li.classList.add('ai-item');
+
+      // avatar แบบ img ใช้ลิงก์ใน profilePic
+      const avatar = document.createElement('img');
+      avatar.className = 'ai-avatar';
+      avatar.src = ai.profilePic;
+      avatar.alt = ai.name;
+      li.appendChild(avatar);
+
+      const textNode = document.createTextNode(ai.name);
+      li.appendChild(textNode);
+
+      li.addEventListener('click', () => {
+        if (selectedAI && selectedAI.id === ai.id) return; // คลิกซ้ำไม่แจ้ง
+        selectedAI = ai;
+        highlightSelectedAI();
+        renderPhrases();
+        clearMessages();
+        showNotification(`คุณเลือก: ${ai.name}`);
+      });
+
+      aiListEl.appendChild(li);
+    });
+  }
+
+  function highlightSelectedAI() {
+    const items = document.querySelectorAll('.ai-item');
+    items.forEach(item => {
+      item.classList.toggle('selected', selectedAI && item.dataset.id == selectedAI.id);
+    });
+  }
+
+  // คำพูดสำเร็จรูปสำหรับแต่ละ AI
+  function renderPhrases() {
+    const phrasesEl = document.getElementById('phrases');
+    phrasesEl.innerHTML = '';
+    if (!selectedAI) return;
+    selectedAI.phrases.forEach(phrase => {
+      const btn = document.createElement('button');
+      btn.textContent = phrase;
+      btn.onclick = () => sendMessage(phrase);
+      phrasesEl.appendChild(btn);
+    });
+  }
+
+  // ล้างข้อความแชท
+  function clearMessages() {
+    document.getElementById('messages').innerHTML = '';
+  }
+
+  // เพิ่มข้อความแชท
+  function addMessage(sender, text) {
+    const messagesEl = document.getElementById('messages');
+    const msg = document.createElement('div');
+    msg.className = `message ${sender}`;
+
+    const avatar = document.createElement('img');
+    avatar.className = 'avatar';
+    avatar.src = sender === 'ai' ? selectedAI.profilePic : userSVG;
+    avatar.alt = sender === 'ai' ? (selectedAI?.name || 'AI') : 'You';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+
+    msg.appendChild(avatar);
+    msg.appendChild(bubble);
+    messagesEl.appendChild(msg);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  // รูป user (You)
+  const userSVG = 'https://cdn-icons-png.flaticon.com/512/149/149071.png'; // รูปผู้ใช้ (You)
+
+  // ส่งข้อความและรับคำตอบ
+  function sendMessage(text) {
+    if (!selectedAI) {
+      showNotification('กรุณาเลือกนักวิทยาศาสตร์ก่อนส่งข้อความ');
+      return;
+    }
+    addMessage('user', text);
+
+    let reply = selectedAI.replies[text];
+    if (!reply) {
+      reply = selectedAI.replies['default'] || 'ขอโทษครับ/ค่ะ ฉันยังไม่มีคำตอบสำหรับเรื่องนี้';
+    }
+    setTimeout(() => addMessage('ai', reply), 700);
+  }
+
+  // แสดงการแจ้งเตือน
+  function showNotification(msg) {
+    const notif = document.getElementById('notification');
+    notif.textContent = msg;
+    notif.classList.add('show');
+    setTimeout(() => {
+      notif.classList.remove('show');
+    }, 2500);
+  }
+
+  // กดปุ่มส่งข้อความ
+  const sendBtn = document.getElementById('sendBtn');
+  const inputEl = document.getElementById('userInput');
+
+  sendBtn.onclick = () => {
+    if (inputEl.value.trim()) {
+      sendMessage(inputEl.value.trim());
+      inputEl.value = '';
+    }
+  };
+
+  inputEl.addEventListener('keypress', e => {
+    if (e.key === 'Enter' && inputEl.value.trim()) {
+      sendMessage(inputEl.value.trim());
+      inputEl.value = '';
+    }
+  });
+
+  // ซ่อนหน้าจอ Loading หลัง 2 วินาที (จำลองโหลด)
+  const loadingScreen = document.getElementById('loadingScreen');
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      loadingScreen.style.display = 'none';
+    }, 2000);
+  });
+
+  renderAIList();
+
+  function renderPhrases() {
+  const phrasesEl = document.getElementById('phrases');
+  phrasesEl.innerHTML = '';
+  if (!selectedAI) return;
+
+  // ถ้า AI ตัวที่เลือกคือ BAI id=6 ให้เพิ่ม class bai-scroll เพื่อทำให้เลื่อน
+  if (selectedAI.id === 6) {
+    phrasesEl.classList.add('bai-scroll');
+  } else {
+    phrasesEl.classList.remove('bai-scroll');
+  }
+
+  selectedAI.phrases.forEach(phrase => {
+    const btn = document.createElement('button');
+    btn.textContent = phrase;
+    btn.onclick = () => sendMessage(phrase);
+    phrasesEl.appendChild(btn);
+  });
+}
+
+</script>
+
+</body>
+</html>
